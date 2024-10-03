@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Smooth "S" Shape Icon</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: black;
+        }
+
+        canvas {
+            background-color: black;
+            margin: 0 auto;
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .control-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .control-panel label {
+            display: inline-block;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .control-panel input[type="range"] {
+            width: 60%;
+            margin-bottom: 10px;
+        }
+
+        .control-panel button {
+            font-size: 18px;
+            padding: 5px 10px;
+            margin-right: 10px;
+        }
+
+        .control-value {
+            display: inline-block;
+            width: 15%;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .save-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            background-image: url('./download.png');
+            background-size: cover;
+            cursor: pointer;
+        }
+
+        .color-value {
+            display: inline-block;
+            margin-left: 10px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="myCanvas"></canvas>
+    <div class="control-panel">
+        <div class="save-icon" id="saveIcon"></div>
+        <label for="rotationSlider">Rotation:</label>
+        <input type="range" id="rotationSlider" min="0" max="360" value="17" step="1">
+        <span class="control-value" id="rotationValue">17</span>
+        <br>
+        <label for="thicknessButtons">Thickness:</label>
+        <button id="decreaseThickness">-</button>
+        <button id="increaseThickness">+</button>
+        <span class="control-value" id="thicknessValue">20</span>
+        <br>
+        <label for="curvatureSlider">Curvature:</label>
+        <input type="range" id="curvatureSlider" min="0" max="1000" value="100" step="10">
+        <span class="control-value" id="curvatureValue">100</span>
+        <br>
+        <label for="eccentricitySlider">Eccentricity:</label>
+        <input type="range" id="eccentricitySlider" min="0" max="1000" value="30" step="10">
+        <span class="control-value" id="eccentricityValue">30</span>
+        <br>
+        <label for="colorPicker">Color:</label>
+        <input type="color" id="colorPicker" value="#00ff00">
+        <span class="color-value" id="colorValue">R: 0, G: 255, B: 0</span>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false, antialias: true });
+        const rotationSlider = document.getElementById('rotationSlider');
+        const rotationValue = document.getElementById('rotationValue');
+        const increaseThicknessBtn = document.getElementById('increaseThickness');
+        const decreaseThicknessBtn = document.getElementById('decreaseThickness');
+        const thicknessValue = document.getElementById('thicknessValue');
+        const curvatureSlider = document.getElementById('curvatureSlider');
+        const curvatureValue = document.getElementById('curvatureValue');
+        const eccentricitySlider = document.getElementById('eccentricitySlider');
+        const eccentricityValue = document.getElementById('eccentricityValue');
+        const colorPicker = document.getElementById('colorPicker');
+        const colorValue = document.getElementById('colorValue');
+        const saveIcon = document.getElementById('saveIcon');
+
+        // Set initial values for the curve
+        let thickness = 20;
+        let color = colorPicker.value;
+
+        const padding = 20; // Padding to add around the curve
+
+        // Control points for the Bézier curve (relative to center of the canvas)
+        const startX = -200;
+        const startY = 100;
+        const cp1x = -100;
+        const cp1y = -100;
+        const cp2x = 100;
+        const cp2y = 100;
+        const endX = 200;
+        const endY = -100;
+
+        // Resize canvas based on the curve dimensions
+        function resizeCanvasToFitCurve() {
+            const aspectRatio = (canvas.clientWidth / canvas.clientHeight);
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerWidth / aspectRatio;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawSShape(rotation, curvature, eccentricity) {
+            // Resize the canvas to fit the curve
+            resizeCanvasToFitCurve();
+
+            // Save canvas state before transformations
+            ctx.save();
+
+            // Translate to center
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+
+            // Apply rotation
+            ctx.rotate(rotation * Math.PI / 180);
+
+            // Rotate -90 degrees and mirror
+            ctx.rotate(-Math.PI / 2);
+            ctx.scale(-1, 1);
+
+            // Set line styles
+            ctx.lineWidth = thickness;
+            ctx.strokeStyle = color;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Begin the path
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+
+            // Draw the top curve
+            ctx.bezierCurveTo(cp1x, cp1y - eccentricity, cp1x + curvature, cp1y - eccentricity, (startX + endX) / 2, (startY + endY) / 2);
+
+            // Draw the bottom curve
+            ctx.bezierCurveTo(cp2x - curvature, cp2y + eccentricity, cp2x, cp2y + eccentricity, endX, endY);
+
+            // Stroke the path
+            ctx.stroke();
+
+            // Restore canvas state
+            ctx.restore();
+        }
+
+        // Draw initial curve
+        drawSShape(parseInt(rotationSlider.value), parseInt(curvatureSlider.value), parseInt(eccentricitySlider.value));
+
+        // Event listeners for controls
+        rotationSlider.addEventListener('input', function () {
+            const rotation = parseFloat(rotationSlider.value);
+            const curvature = parseInt(curvatureSlider.value);
+            const eccentricity = parseInt(eccentricitySlider.value);
+            drawSShape(rotation, curvature, eccentricity);
+            rotationValue.textContent = rotation;
+        });
+
+        increaseThicknessBtn.addEventListener('click', function () {
+            thickness += 2;
+            drawSShape(parseFloat(rotationSlider.value), parseInt(curvatureSlider.value), parseInt(eccentricitySlider.value));
+            thicknessValue.textContent = thickness;
+        });
+
+        decreaseThicknessBtn.addEventListener('click', function () {
+            if (thickness > 2) {
+                thickness -= 2;
+                drawSShape(parseFloat(rotationSlider.value), parseInt(curvatureSlider.value), parseInt(eccentricitySlider.value));
+                thicknessValue.textContent = thickness;
+            }
+        });
+
+        curvatureSlider.addEventListener('input', function () {
+            const rotation = parseFloat(rotationSlider.value);
+            const curvature = parseInt(curvatureSlider.value);
+            const eccentricity = parseInt(eccentricitySlider.value);
+            drawSShape(rotation, curvature, eccentricity);
+            curvatureValue.textContent = curvature;
+        });
+
+        eccentricitySlider.addEventListener('input', function () {
+            const rotation = parseFloat(rotationSlider.value);
+            const curvature = parseInt(curvatureSlider.value);
+            const eccentricity = parseInt(eccentricitySlider.value);
+            drawSShape(rotation, curvature, eccentricity);
+            eccentricityValue.textContent = eccentricity;
+        });
+
+        colorPicker.addEventListener('input', function () {
+            color = colorPicker.value;
+            drawSShape(parseFloat(rotationSlider.value), parseInt(curvatureSlider.value), parseInt(eccentricitySlider.value));
+            const rgbColor = hexToRgb(color);
+            colorValue.textContent = `R: ${rgbColor.r}, G: ${rgbColor.g}, B: ${rgbColor.b}`;
+        });
+
+        // Convert hex color to RGB
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        // Save canvas as PNG with RGB values in the filename
+        saveIcon.addEventListener('click', function () {
+            const rotation = parseFloat(rotationSlider.value);
+            const curvature = parseInt(curvatureSlider.value);
+            const eccentricity = parseInt(eccentricitySlider.value);
+            const rgbColor = hexToRgb(color);
+            const filename = `s-shape_rot${rotation}_curv${curvature}_ecc${eccentricity}_R${rgbColor.r}_G${rgbColor.g}_B${rgbColor.b}.png`;
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = filename;
+            link.click();
+        });
+
+        // Ensure canvas resizes with window
+        window.addEventListener('resize', () => {
+            drawSShape(parseFloat(rotationSlider.value), parseInt(curvatureSlider.value), parseInt(eccentricitySlider.value));
+        });
+    </script>
+</body>
+
+</html>
